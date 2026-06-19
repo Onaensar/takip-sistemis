@@ -4,18 +4,24 @@
     <meta charset="UTF-8">
     <title>GymPro Ultimate AI</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; padding: 20px; }
-        .card { background: #121212; padding: 20px; border-radius: 20px; border: 1px solid #333; margin-bottom: 20px; }
-        button { background: #30d158; padding: 15px; width: 100%; border: none; border-radius: 10px; cursor: pointer; }
+        :root { --bg:#000; --green:#30d158; }
+        body { font-family: sans-serif; background: var(--bg); color: #fff; padding: 20px; margin: 0; }
+        .card { background: #121212; border: 1px solid #333; padding: 20px; border-radius: 20px; max-width: 500px; margin: auto; }
+        input, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; background: #222; border: 1px solid #444; color: white; box-sizing: border-box; }
+        button { background: var(--green); border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; color: black; }
     </style>
 </head>
 <body>
-<div class="card">
-    <input type="password" id="key" placeholder="API Anahtarın">
-    <input type="file" id="photo" accept="image/*">
-    <textarea id="mealInput" placeholder="Ne yedin?"></textarea>
-    <button onclick="scanFood()">Analiz Et</button>
-    <div id="status" style="margin-top:10px; color:red;"></div>
+<div class="app">
+    <div class="card">
+        <h3>🤖 Analiz Paneli</h3>
+        <input type="password" id="key" placeholder="Gemini API Anahtarın">
+        <input type="file" id="photo" accept="image/*">
+        <textarea id="mealInput" placeholder="Ne yedin?"></textarea>
+        <button onclick="scanFood()">Analiz Et</button>
+        <div id="status" style="margin-top:10px; font-size:12px; color:red;"></div>
+    </div>
+    <div id="result" class="card" style="display:none;"></div>
 </div>
 
 <script>
@@ -28,37 +34,38 @@
         if(!key) return alert("API Key gir!");
         status.innerText = "Analiz ediliyor...";
 
-        try {
-            let base64 = "";
-            if(file) {
-                let canvas = document.createElement("canvas");
-                let img = await createImageBitmap(file);
-                canvas.width = 400; canvas.height = (img.height * 400) / img.width;
-                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-                base64 = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
-            }
+        let base64 = "";
+        if(file) {
+            let canvas = document.createElement("canvas");
+            let img = await createImageBitmap(file);
+            canvas.width = 300; canvas.height = (img.height * 300) / img.width;
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            base64 = canvas.toDataURL("image/jpeg", 0.5).split(",")[1];
+        }
 
-            let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+        try {
+            // Model adı 'gemini-1.5-flash-latest' olarak güncellendi
+            let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`, {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ contents: [{ parts: [
-                    {text: '{"name":"Yemek","cal":0,"pro":0,"carb":0,"fat":0,"fib":0}. Sadece JSON dön.' + input},
+                    {text: 'Sadece şu JSON formatını dön: {"name":"İsim","cal":0,"pro":0,"carb":0,"fat":0,"fib":0}. Yemek: ' + input},
                     base64 ? {inlineData:{mimeType:"image/jpeg", data:base64}} : {text: ""}
                 ]}]})
             });
-
-            let data = await response.json();
-            console.log("API Yanıtı:", data); // Hatanın ne olduğunu buradan F12 ile göreceksin
-
-            if (data.error) {
-                status.innerText = "API Hatası: " + data.error.message;
-            } else if (data.candidates && data.candidates[0].content.parts[0].text) {
-                status.style.color = "green";
-                status.innerText = "Başarılı: " + data.candidates[0].content.parts[0].text;
-            } else {
-                status.innerText = "Beklenmedik yanıt döndü.";
-            }
+            let data = await res.json();
+            
+            if(data.error) throw new Error(data.error.message);
+            
+            let txt = data.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
+            let json = JSON.parse(txt);
+            
+            document.getElementById("result").style.display = "block";
+            document.getElementById("result").innerHTML = `<b>${json.name}</b><br>Kalori: ${json.cal} | Pro: ${json.pro}g | Karb: ${json.carb}g`;
+            status.style.color = "green";
+            status.innerText = "Başarılı! ✅";
         } catch(e) { 
-            status.innerText = "Bağlantı Hatası: " + e.message;
+            status.innerText = "HATA: " + e.message;
+            console.error("Detay:", e);
         }
     }
 </script>
