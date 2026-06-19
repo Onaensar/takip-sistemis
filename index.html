@@ -239,7 +239,7 @@
 </div>
 
 <script>
-    // VERİTABANI BAŞLATMA (Hata Korumalı)
+    // VERİTABANI BAŞLATMA
     let db = {};
     try {
         let storedData = localStorage.getItem('athleteDBProFinal');
@@ -313,18 +313,15 @@
         ]
     };
 
-    // VERİ GÜVENLİĞİ
     function ensureDataExists(date) {
         if (!db[date]) { db[date] = { cal: '', prot: '', carb: '', fat: '', steps: '', water: '', sleep: '', tasks: {} }; }
-        if (!db[date].tasks) db[date].tasks = {}; // Eğer eski veritabanından kalma task yoksa oluştur
+        if (!db[date].tasks) db[date].tasks = {}; 
     }
 
-    // ARAYÜZÜ GÜNCELLE
     function updateUI() {
         ensureDataExists(selectedDate);
         let data = db[selectedDate];
 
-        // Takvim
         const calContainer = document.getElementById('calendar');
         calContainer.innerHTML = "";
         const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
@@ -342,7 +339,6 @@
                 </div>`;
         }
         
-        // Özet Ekranı
         document.getElementById('show-cal').innerHTML = `${data.cal || 0} <span>kcal</span>`;
         document.getElementById('show-prot').innerText = (data.prot || 0) + 'g';
         document.getElementById('show-carb').innerText = (data.carb || 0) + 'g';
@@ -351,13 +347,11 @@
         document.getElementById('show-water').innerText = (data.water || 0) + 'L';
         document.getElementById('show-sleep').innerText = (data.sleep || 0) + 's';
 
-        // Form Girdileri
         ['cal','prot','carb','fat','steps','water','sleep'].forEach(id => {
             let el = document.getElementById(id);
             if(el) el.value = data[id] || '';
         });
 
-        // Listeleri Render Et
         renderList('list-supplements', tasksConfig.supplements);
         renderList('list-posture', tasksConfig.posture);
         renderList('list-abs', tasksConfig.abs);
@@ -418,7 +412,7 @@
         setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; }, 2000);
     }
 
-    // --- YAPAY ZEKA (GEMINI AI) ENTEGRASYONU ---
+    // --- EN GELİŞMİŞ YAPAY ZEKA (GEMINI 1.5 PRO) ENTEGRASYONU ---
     async function analyzeFood() {
         const apiKey = localStorage.getItem('geminiApiKeyLocal');
         const textInput = document.getElementById('food-text').value.trim();
@@ -436,16 +430,13 @@
             return; 
         }
 
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yapay Zeka Analiz Ediyor...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yapay Zeka Düşünüyor...';
         btn.disabled = true;
         resultBox.style.display = 'none';
 
         try {
             let contents = [];
-            
-            // Kesin ve Net Prompt Formatı
-            const systemPrompt = `Sen profesyonel bir sporcu diyetisyenisin. Gönderilen yemeğin besin değerlerini (gram cinsinden) tahmin et. SADECE aşağidaki formatta bir JSON objesi döndür. Kesinlikle markdown karakterleri (\`\`\`json vs) veya başka bir açıklama ekleme. 
-Örnek Format: {"cal": 150, "prot": 20, "carb": 10, "fat": 5, "fiber": 2}`;
+            const systemPrompt = "Sen profesyonel bir sporcu diyetisyenisin. Verilen yemeğin besin değerlerini gram ve kcal cinsinden tahmin et.";
 
             if (fileInput) {
                 const base64Image = await new Promise((resolve) => {
@@ -457,7 +448,7 @@
                 contents.push({
                     "parts": [
                         {"text": systemPrompt},
-                        {"text": textInput ? "Kullanıcı notu: " + textInput : "Bu fotoğraftaki yemeğin besin değerlerini analiz et."},
+                        {"text": textInput ? "Ek kullanıcı notu: " + textInput : "Bu fotoğraftaki yemeğin besin değerlerini hesapla."},
                         {"inline_data": {"mime_type": fileInput.type, "data": base64Image}}
                     ]
                 });
@@ -467,46 +458,56 @@
                 });
             }
 
-            // API İstek
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            // GEMINI 1.5 PRO ve "Sadece JSON" (Structured Output) Kilidi
+            const payload = {
+                contents: contents,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            cal: { type: "INTEGER", description: "Toplam Kalori miktarı" },
+                            prot: { type: "INTEGER", description: "Toplam Protein (gram)" },
+                            carb: { type: "INTEGER", description: "Toplam Karbonhidrat (gram)" },
+                            fat: { type: "INTEGER", description: "Toplam Yağ (gram)" },
+                            fiber: { type: "INTEGER", description: "Toplam Lif (gram)" }
+                        },
+                        required: ["cal", "prot", "carb", "fat", "fiber"]
+                    }
+                }
+            };
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: contents })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
             
             if(data.error) throw new Error(data.error.message);
 
+            // Gelen veri doğrudan %100 temiz JSON olmak zorunda
             let aiText = data.candidates[0].content.parts[0].text;
-            
-            // AI bazen formatı bozarsa diye Regex ile JSON çıkarma (Hata Koruması)
-            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                tempAiData = JSON.parse(jsonMatch[0]);
-            } else {
-                throw new Error("Yapay zeka geçerli bir format döndüremedi.");
-            }
+            tempAiData = JSON.parse(aiText);
 
-            // Değerleri Ekrana Bas
             document.getElementById('ai-cal').innerText = tempAiData.cal + ' kcal';
             document.getElementById('ai-prot').innerText = tempAiData.prot + 'g';
             document.getElementById('ai-carb').innerText = tempAiData.carb + 'g';
             document.getElementById('ai-fat').innerText = tempAiData.fat + 'g';
-            document.getElementById('ai-fiber').innerText = (tempAiData.fiber || 0) + 'g';
+            document.getElementById('ai-fiber').innerText = tempAiData.fiber + 'g';
 
             resultBox.style.display = 'block';
 
         } catch (error) {
             console.error("Yapay Zeka Hatası:", error);
-            alert("Analiz başarısız oldu. Lütfen API anahtarınızın doğru olduğunu kontrol edin.\n\nSistem Notu: " + error.message);
+            alert("Analiz başarısız oldu. API anahtarını kontrol et. Hata: " + error.message);
         } finally {
             btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Yapay Zeka İle Analiz Et';
             btn.disabled = false;
         }
     }
 
-    // AI Verilerini Formlara Uygula
     function applyAiData() {
         if (!tempAiData) return;
 
@@ -527,10 +528,9 @@
         document.getElementById('food-image').value = '';
         tempAiData = null;
         
-        alert("Besin değerleri başarıyla bugünkü listene eklendi!");
+        alert("Besin değerleri bugünkü listene başarıyla eklendi!");
     }
 
-    // --- GRAFİK ÇİZİMİ ---
     function renderChart() {
         let labels = Object.keys(db).sort().slice(-7);
         let chartData = labels.map(l => db[l].cal || 0);
@@ -565,7 +565,7 @@
         });
     }
 
-    // Sayfa Açıldığında Kontrolleri Başlat
+    // Başlat
     checkApiState();
     updateUI();
 </script>
