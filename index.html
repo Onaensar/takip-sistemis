@@ -24,19 +24,16 @@
         #cal-fill { background-color: var(--primary-color); }
         #pro-fill { background-color: var(--protein-color); }
 
-        /* Su Takibi CSS */
         .water-section { background-color: #1a2a3a; padding: 15px; border-radius: var(--border-radius); margin-bottom: 20px; text-align: center; border: 1px solid #005b6e;}
         .water-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; }
         .water-btn { background-color: var(--water-color); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; font-weight: bold;}
-        .water-btn:hover { background-color: #0097a7; }
         
-        /* Yapay Zeka CSS */
         .ai-section { background-color: #2a2a2a; padding: 15px; border-radius: var(--border-radius); border: 1px solid #444; margin-bottom: 20px; }
         .ai-header { color: var(--ai-color); font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; }
         textarea, input[type="file"] { width: 100%; padding: 10px; border: 1px solid #444; background-color: #1e1e1e; color: white; border-radius: var(--border-radius); box-sizing: border-box; margin-bottom: 10px; }
         button.action-btn { width: 100%; padding: 10px; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: bold; font-size: 15px; color: white;}
-        .ai-btn { background-color: var(--ai-color); } .ai-btn:hover { background-color: #7b1fa2; }
-
+        .ai-btn { background-color: var(--ai-color); } 
+        
         .list-section { max-height: 200px; overflow-y: auto; margin-bottom: 20px;}
         .log-item { background-color: #2c2c2c; padding: 10px; margin-bottom: 8px; border-radius: var(--border-radius); font-size: 13px; }
         .log-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 14px;}
@@ -100,12 +97,11 @@
 </div>
 
 <script>
-    // ŞİFRE ARTIK KODUN İÇİNDE DEĞİL, CİHAZIN HAFIZASINDAN ÇEKİLİYOR
     let GEMINI_API_KEY = localStorage.getItem('my_gemini_key'); 
-    
     const goalCal = 2400; const goalPro = 170; const goalWater = 2500;
     
-    let db = {}; let currentDate = ""; let base64Image = null;
+    let db = {}; let currentDate = ""; 
+    let base64Image = null; let imageMimeType = null;
 
     window.onload = function() {
         const today = new Date().toISOString().split('T')[0];
@@ -123,22 +119,17 @@
     }
 
     function initDay(date) {
-        if(!db[date]) {
-            db[date] = { foods: [], water: 0, steps: "", checks: { apt: false, o3: false, d3: false, zma: false } };
-        }
+        if(!db[date]) { db[date] = { foods: [], water: 0, steps: "", checks: { apt: false, o3: false, d3: false, zma: false } }; }
     }
 
     function loadDayData() {
         initDay(currentDate); updateUI();
-        
         document.getElementById('stepInput').value = db[currentDate].steps || "";
         const checks = db[currentDate].checks;
         ['apt', 'o3', 'd3', 'zma'].forEach(id => { document.getElementById('chk-' + id).checked = checks[id]; });
-        
-        // Fotoğraf alanını sıfırla
         document.getElementById('imageInput').value = "";
         document.getElementById('imagePreview').style.display = "none";
-        base64Image = null;
+        base64Image = null; imageMimeType = null;
     }
 
     function updateWater(amount) {
@@ -150,49 +141,73 @@
     function saveSteps() {
         db[currentDate].steps = document.getElementById('stepInput').value;
         saveData();
-        alert("Adım kaydedildi!");
     }
 
-    // Resmi Base64'e çevirip ekranda gösterme
+    // YENİ GÖRÜNTÜ SIKIŞTIRMA VE FORMAT TANIMA MODÜLÜ
     function previewImage() {
         const file = document.getElementById('imageInput').files[0];
         if(!file) return;
+        
+        // Cihazın yüklediği formatı al (png, jpeg, webp)
+        imageMimeType = file.type || "image/jpeg"; 
+        
         const reader = new FileReader();
         reader.onloadend = function() {
-            base64Image = reader.result.split(',')[1]; // Sadece data kısmı
             document.getElementById('imagePreview').src = reader.result;
             document.getElementById('imagePreview').style.display = "block";
+            
+            // Resmi belleğe alıp Canvas ile sıkıştırıyoruz
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Maksimum 800 piksel genişlik
+                const MAX_WIDTH = 800;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Sıkıştırılmış veriyi base64'e çevir (kalite 0.8)
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+                
+                // Formatı kesin jpeg olarak gönderiyoruz çünkü API en iyi onu okur
+                imageMimeType = "image/jpeg";
+                base64Image = dataUrl.split(',')[1];
+            }
+            img.src = reader.result;
         }
         reader.readAsDataURL(file);
     }
 
     async function askGemini() {
-        // GÜVENLİK ADIMI: Şifre yoksa kullanıcıdan iste ve cihaza kaydet
         if (!GEMINI_API_KEY) {
-            const userKey = prompt("Yapay zekayı kullanmak için lütfen yeni oluşturduğunuz Gemini API Anahtarınızı girin.\n(Bu şifre kodda tutulmaz, sadece bu cihaza kaydedilir):");
+            const userKey = prompt("Lütfen API Anahtarınızı girin:");
             if (userKey && userKey.trim() !== "") {
                 GEMINI_API_KEY = userKey.trim();
                 localStorage.setItem('my_gemini_key', GEMINI_API_KEY);
-                alert("Şifre bu cihaza başarıyla kaydedildi! Artık analizi başlatabilirsin.");
-            } else {
-                alert("API anahtarı girmeden analizi başlatamazsın.");
-                return;
-            }
+            } else { return; }
         }
         
         const userInput = document.getElementById('aiInput').value;
-        if(!userInput && !base64Image) { alert("Lütfen ya bir fotoğraf yükle ya da metin gir."); return; }
+        if(!userInput && !base64Image) { alert("Lütfen fotoğraf yükle veya metin gir."); return; }
 
-        document.getElementById('ai-status').innerText = "Göze/Metne Bakılıyor...";
+        document.getElementById('ai-status').innerText = "Analiz ediliyor...";
         
         const systemPrompt = `Kullanıcı bir yemek fotoğrafı ve/veya metni girdi: "${userInput}". Yemeği tanı ve Toplam Kalori, Protein(g), Karbonhidrat(g), Yağ(g) ve Lif(g) değerlerini tahmin et. Sadece şu formatta JSON döndür, ASLA başka metin yazma: {"name": "Yemek Adı", "cal": 100, "pro": 10, "carb": 20, "fat": 5, "fib": 2}`;
 
-        // Payload hazırlığı: Resim varsa içeriğe ekle
         let parts = [{ text: systemPrompt }];
         if(base64Image) {
-            parts.push({
-                inline_data: { mime_type: "image/jpeg", data: base64Image }
-            });
+            // Dinamik Mime Type Kullanımı
+            parts.push({ inline_data: { mime_type: imageMimeType, data: base64Image } });
         }
 
         try {
@@ -201,14 +216,12 @@
                 body: JSON.stringify({ contents: [{ parts: parts }] })
             });
 
-            // GÜVENLİK ADIMI: Şifre yanlışsa veya silindiyse cihazdan temizle
             if (!response.ok) {
                 if (response.status === 400 || response.status === 403) {
-                    localStorage.removeItem('my_gemini_key');
-                    GEMINI_API_KEY = null;
-                    alert("API Anahtarı geçersiz! Google AI Studio'dan sildiysen yeni oluşturduğun şifreyi girmen gerekecek. Lütfen tekrar dene.");
+                    localStorage.removeItem('my_gemini_key'); GEMINI_API_KEY = null;
+                    alert("API Anahtarı geçersiz veya kotalar doldu!");
                 }
-                throw new Error("API yanıt vermedi.");
+                throw new Error("API hatası: " + response.status);
             }
 
             const data = await response.json();
@@ -228,7 +241,7 @@
             base64Image = null;
         } catch (error) {
             document.getElementById('ai-status').innerText = "Hata!";
-            console.error(error); 
+            alert("Analiz başarısız. Lütfen tekrar deneyin.");
         } finally {
             setTimeout(() => { document.getElementById('ai-status').innerText = "Bekliyor..."; }, 3000);
         }
@@ -237,11 +250,9 @@
     function deleteFood(id) { db[currentDate].foods = db[currentDate].foods.filter(f => f.id !== id); saveData(); }
 
     function updateUI() {
-        // Su Güncellemesi
         document.getElementById('water-text').innerText = db[currentDate].water;
         document.getElementById('glass-text').innerText = db[currentDate].water / 250;
 
-        // Besin Güncellemesi
         const foods = db[currentDate].foods;
         let totalCal = foods.reduce((sum, f) => sum + f.cal, 0);
         let totalPro = foods.reduce((sum, f) => sum + f.pro, 0);
