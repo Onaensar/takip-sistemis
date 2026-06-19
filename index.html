@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Athlete Pro | Premium Dashboard & AI</title>
     
+    <!-- Fontlar ve İkonlar -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -83,9 +86,13 @@
         .ai-macro-item { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; text-align: center; font-size: 0.9em; }
         .ai-macro-item span { display: block; font-weight: 700; font-size: 1.2em; color: #fff; }
         
-        /* Cihaz Kayıt Rozeti */
+        /* Güvenlik Kutusu ve Rozet */
+        .api-key-box { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 16px; border: 1px dashed rgba(168, 85, 247, 0.4); }
+        .api-key-box input { margin: 0; padding-left: 15px; border: none; }
+        .api-key-box button { width: auto; margin: 0; padding: 0 20px; background: var(--ai-color); }
+        
         .device-registered { display: none; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 15px 20px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.3); margin-bottom: 20px; }
-        .device-registered span { color: #10b981; font-weight: 600; font-size: 0.9em; }
+        .device-registered span { color: #10b981; font-weight: 600; font-size: 0.95em; display: flex; align-items: center; gap: 8px;}
         .device-registered button { width: auto; padding: 8px 15px; margin: 0; font-size: 0.8em; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
     </style>
 </head>
@@ -97,8 +104,10 @@
         <span id="date-title" style="color: var(--text-muted); font-weight: 600;">Bugün</span>
     </div>
 
+    <!-- Takvim -->
     <div class="day-scroll" id="calendar"></div>
 
+    <!-- Ana İstatistik Kartı -->
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-fire"></i> Günlük Performans Özeti</div>
         <div class="cal-container">
@@ -115,70 +124,73 @@
         </div>
     </div>
 
+    <!-- Supplement Rutini -->
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-capsules" style="color: #f472b6;"></i> Supplement Rutini</div>
         <ul class="task-list" id="list-supplements"></ul>
     </div>
 
+    <!-- APT ve Postür Düzeltme -->
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-person-walking-arrow-right" style="color: #2dd4bf;"></i> APT Düzeltme Programı</div>
         <ul class="task-list" id="list-posture"></ul>
     </div>
 
+    <!-- Beslenme ve Karın Kası -->
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-dumbbell" style="color: #fb923c;"></i> Karın Kası & Beslenme</div>
         <ul class="task-list" id="list-abs"></ul>
     </div>
 
+    <!-- YAPAY ZEKA YEMEK ANALİZİ KARTI (HER ZAMAN GÖRÜNÜR) -->
     <div class="card" style="border-color: rgba(168, 85, 247, 0.4); box-shadow: 0 10px 30px rgba(168, 85, 247, 0.1);">
         <div class="card-title" style="color: #c084fc;"><i class="fa-solid fa-robot"></i> Gemini AI Yemek Analizi</div>
         
-        <div id="api-setup-section">
-            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 15px;">Yapay zekayı kullanmak için bu cihaza API anahtarını tanımlamalısın. Anahtarın güvenle telefonunda saklanacaktır.</p>
-            <div class="input-group full-width" style="margin-bottom: 15px;">
-                <i class="fa-solid fa-key" style="color: #c084fc;"></i>
-                <input type="password" id="gemini-api-key" placeholder="Gemini API Anahtarını Buraya Yapıştır">
-            </div>
-            <button onclick="saveApiKey()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); margin-bottom: 10px;"><i class="fa-solid fa-lock"></i> Cihazı Kaydet ve Kitle</button>
+        <!-- API Anahtarı Girme Alanı (Anahtar yoksa görünür) -->
+        <div id="api-setup-section" class="api-key-box">
+            <input type="password" id="gemini-api-key" placeholder="API Anahtarını Yapıştır">
+            <button onclick="saveApiKey()"><i class="fa-solid fa-lock"></i></button>
         </div>
 
+        <!-- API Kayıtlı Rozeti (Anahtar varsa görünür) -->
         <div id="api-registered-section" class="device-registered">
             <span><i class="fa-solid fa-shield-check"></i> Cihaz AI Sistemine Kayıtlı</span>
-            <button onclick="resetApiKey()"><i class="fa-solid fa-trash"></i> Sıfırla</button>
+            <button onclick="resetApiKey()"><i class="fa-solid fa-trash"></i> Sil</button>
         </div>
 
-        <div id="ai-tools-section" style="display: none;">
-            <div class="input-group full-width">
-                <i class="fa-solid fa-utensils"></i>
-                <input type="text" id="food-text" placeholder="Ne yedin? (Ör: 200g tavuk göğsü, 1 tabak pilav)">
-            </div>
+        <!-- AI Araçları (Her zaman görünür, kullanımı kolay) -->
+        <div class="input-group full-width">
+            <i class="fa-solid fa-utensils" style="top:18px;"></i>
+            <input type="text" id="food-text" placeholder="Ne yedin? (Ör: 200g tavuk göğsü, 1 tabak pilav)">
+        </div>
+        
+        <div style="margin-bottom: 15px; margin-top: 5px;">
+            <label style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 8px; display: block;"><i class="fa-solid fa-camera"></i> Veya Yemeğin Fotoğrafını Yükle:</label>
+            <input type="file" id="food-image" accept="image/*">
+        </div>
+
+        <button onclick="analyzeFood()" id="ai-btn" class="btn-ai"><i class="fa-solid fa-wand-magic-sparkles"></i> Yapay Zeka İle Analiz Et</button>
+        
+        <!-- Yapay Zeka Sonuç Ekranı -->
+        <div id="ai-result" class="ai-result-box">
+            <h4 style="margin: 0 0 5px 0; color: #e9d5ff;"><i class="fa-solid fa-check-circle"></i> Analiz Tamamlandı!</h4>
+            <span style="font-size: 0.8em; color: var(--text-muted);">Bulunan tahmini değerler:</span>
             
-            <div style="margin-bottom: 15px;">
-                <label style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 8px; display: block;"><i class="fa-solid fa-camera"></i> Veya Yemeğin Fotoğrafını Yükle:</label>
-                <input type="file" id="food-image" accept="image/*">
+            <div class="ai-macro-grid">
+                <div class="ai-macro-item">Kalori <span id="ai-cal" style="color: var(--primary);">0</span></div>
+                <div class="ai-macro-item">Protein <span id="ai-prot" style="color: var(--danger);">0g</span></div>
+                <div class="ai-macro-item">Karbonhidrat <span id="ai-carb" style="color: var(--warning);">0g</span></div>
+                <div class="ai-macro-item">Yağ <span id="ai-fat" style="color: #fde047;">0g</span></div>
+                <div class="ai-macro-item" style="grid-column: span 2;">Lif Kaynağı <span id="ai-fiber" style="color: #34d399;">0g</span></div>
             </div>
 
-            <button onclick="analyzeFood()" id="ai-btn" class="btn-ai"><i class="fa-solid fa-wand-magic-sparkles"></i> Yapay Zeka İle Analiz Et</button>
-            
-            <div id="ai-result" class="ai-result-box">
-                <h4 style="margin: 0 0 5px 0; color: #e9d5ff;"><i class="fa-solid fa-check-circle"></i> Analiz Tamamlandı!</h4>
-                <span style="font-size: 0.8em; color: var(--text-muted);">Bulunan tahmini değerler:</span>
-                
-                <div class="ai-macro-grid">
-                    <div class="ai-macro-item">Kalori <span id="ai-cal" style="color: var(--primary);">0</span></div>
-                    <div class="ai-macro-item">Protein <span id="ai-prot" style="color: var(--danger);">0g</span></div>
-                    <div class="ai-macro-item">Karbonhidrat <span id="ai-carb" style="color: var(--warning);">0g</span></div>
-                    <div class="ai-macro-item">Yağ <span id="ai-fat" style="color: #fde047;">0g</span></div>
-                    <div class="ai-macro-item" style="grid-column: span 2;">Lif Kaynağı <span id="ai-fiber" style="color: #34d399;">0g</span></div>
-                </div>
-
-                <button onclick="applyAiData()" style="margin-top: 15px; padding: 12px; font-size: 0.9em; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                    <i class="fa-solid fa-plus"></i> Değerleri Bugünkü Tabloma Ekle
-                </button>
-            </div>
+            <button onclick="applyAiData()" style="margin-top: 15px; padding: 12px; font-size: 0.9em; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                <i class="fa-solid fa-plus"></i> Değerleri Bugünkü Tabloma Ekle
+            </button>
         </div>
     </div>
 
+    <!-- Veri Girişi Formu -->
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Manuel Veri Girişi</div>
         
@@ -214,9 +226,10 @@
             </div>
         </div>
         
-        <button onclick="saveData()"><i class="fa-solid fa-check"></i> Verileri Kaydet</button>
+        <button id="save-btn" onclick="saveData()"><i class="fa-solid fa-check"></i> Verileri Kaydet</button>
     </div>
 
+    <!-- Kalori Grafiği -->
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-chart-line"></i> Haftalık Kalori Geçmişi</div>
         <div class="chart-container">
@@ -226,78 +239,92 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('athleteDBPro')) || {};
+    // VERİTABANI BAŞLATMA (Hata Korumalı)
+    let db = {};
+    try {
+        let storedData = localStorage.getItem('athleteDBProFinal');
+        db = storedData ? JSON.parse(storedData) : {};
+    } catch (e) {
+        console.error("Veritabanı okuma hatası, sıfırlanıyor...", e);
+        db = {};
+    }
+    
     let selectedDate = new Date().toISOString().slice(0,10);
-    let chart;
+    let chart = null;
     let tempAiData = null;
 
     // --- CİHAZ KAYIT VE API GÜVENLİK SİSTEMİ ---
     function checkApiState() {
-        const apiKey = localStorage.getItem('geminiApiKey');
+        const apiKey = localStorage.getItem('geminiApiKeyLocal');
         const setupSection = document.getElementById('api-setup-section');
         const registeredSection = document.getElementById('api-registered-section');
-        const toolsSection = document.getElementById('ai-tools-section');
 
         if (apiKey) {
             setupSection.style.display = 'none';
             registeredSection.style.display = 'flex';
-            toolsSection.style.display = 'block';
         } else {
-            setupSection.style.display = 'block';
+            setupSection.style.display = 'flex';
             registeredSection.style.display = 'none';
-            toolsSection.style.display = 'none';
         }
     }
 
     function saveApiKey() {
         const keyInput = document.getElementById('gemini-api-key').value.trim();
-        if (!keyInput) { alert("Lütfen geçerli bir anahtar girin."); return; }
+        if (!keyInput) { alert("Lütfen geçerli bir API anahtarı girin!"); return; }
         
-        localStorage.setItem('geminiApiKey', keyInput);
-        document.getElementById('gemini-api-key').value = ''; // Kutuyu temizle
-        checkApiState(); // Arayüzü güncelle
+        try {
+            localStorage.setItem('geminiApiKeyLocal', keyInput);
+            document.getElementById('gemini-api-key').value = '';
+            checkApiState();
+            alert("Harika! Cihazın sisteme başarıyla kaydedildi.");
+        } catch (e) {
+            alert("Cihazına kayıt yapılamıyor (Gizli sekme kullanıyor olabilirsin).");
+        }
     }
 
     function resetApiKey() {
-        if(confirm("Cihaz kaydını silmek istediğine emin misin? AI kullanmak için anahtarı tekrar girmen gerekecek.")) {
-            localStorage.removeItem('geminiApiKey');
+        if(confirm("Cihaz kaydını silmek istediğine emin misin?")) {
+            localStorage.removeItem('geminiApiKeyLocal');
             checkApiState();
         }
     }
 
-    // Görev ve Liste Ayarları
+    // --- GÖREVLER (SUPPLEMENT, POSTÜR, KARIN) ---
     const tasksConfig = {
         supplements: [
-            { id: 'sup_omega', label: 'Omega-3', desc: '1-2 Kapsül (Sabah tok karnına tüket)' },
-            { id: 'sup_d3k', label: 'D3+K2 Vitamini', desc: '1 Kapsül/Damla (Yağ içeren bir öğünle)' },
-            { id: 'sup_colagen', label: 'Kolajen (Collagen)', desc: '1 Ölçek (Sabah aç karnına veya antrenman öncesi)' },
-            { id: 'sup_hunger', label: 'Hunger Buster', desc: 'Ara öğünde veya şiddetli açlık krizinde 1 adet' },
-            { id: 'sup_zma', label: 'ZMA Kombinasyonu', desc: 'Yatmadan 30-45 dakika önce (Boş mideye)' }
+            { id: 'sup_omega', label: 'Omega-3', desc: '1-2 Kapsül (Sabah tok)' },
+            { id: 'sup_d3k', label: 'D3+K2 Vitamini', desc: '1 Kapsül/Damla (Yağlı öğünle)' },
+            { id: 'sup_colagen', label: 'Kolajen (Collagen)', desc: '1 Ölçek (Sabah aç veya idman öncesi)' },
+            { id: 'sup_hunger', label: 'Hunger Buster', desc: 'Şiddetli açlık krizinde 1 adet' },
+            { id: 'sup_zma', label: 'ZMA Kombinasyonu', desc: 'Yatmadan 30 dk önce (Boş mideye)' }
         ],
         posture: [
-            { id: 'pos_hip', label: 'Kneeling Hip Flexor Stretch', desc: 'Her bacak için 45 saniye bekle (2 Set)' },
-            { id: 'pos_glute', label: 'Glute Bridge', desc: '15 Tekrar (Tepede 2 saniye kalçayı sık) (3 Set)' },
-            { id: 'pos_deadbug', label: 'Deadbug (Bel Yerde!)', desc: 'Toplam 12-16 tekrar (3 Set)' },
-            { id: 'pos_child', label: 'Child\'s Pose', desc: 'Rahatlama pozisyonunda 1 dakika derin nefes' },
-            { id: 'pos_desk', label: 'Masa Başı Molası (10 Saniye)', desc: 'Kalk, dik dur, karnı içeri çek ve kalçayı sık' }
+            { id: 'pos_hip', label: 'Kneeling Hip Flexor Stretch', desc: 'Her bacak 45sn (2 Set)' },
+            { id: 'pos_glute', label: 'Glute Bridge', desc: '15 Tekrar - Tepede sık (3 Set)' },
+            { id: 'pos_deadbug', label: 'Deadbug (Bel Yerde!)', desc: '12-16 Tekrar (3 Set)' },
+            { id: 'pos_child', label: 'Child\'s Pose', desc: '1 dakika esneme ve nefes' },
+            { id: 'pos_desk', label: 'Masa Başı Molası', desc: '10sn kalk, dik dur, kalçayı sık' }
         ],
         abs: [
-            { id: 'nut_oats', label: 'Yulaflı Enerji Öğünü', desc: 'Kaliteli karbonhidrat ve lif alımı tamamlandı' },
+            { id: 'nut_oats', label: 'Yulaflı Enerji Öğünü', desc: 'Yüksek lif ve karbonhidrat alındı' },
             { id: 'abs_plank', label: 'Plank Bekleyişi', desc: '3 Set x 1 Dakika' },
             { id: 'abs_twist', label: 'Russian Twist', desc: '3 Set x 20 Tekrar' },
             { id: 'abs_raise', label: 'Lying Leg Raise', desc: '3 Set x 15 Tekrar' }
         ]
     };
 
+    // VERİ GÜVENLİĞİ
     function ensureDataExists(date) {
         if (!db[date]) { db[date] = { cal: '', prot: '', carb: '', fat: '', steps: '', water: '', sleep: '', tasks: {} }; }
-        if (!db[date].tasks) db[date].tasks = {};
+        if (!db[date].tasks) db[date].tasks = {}; // Eğer eski veritabanından kalma task yoksa oluştur
     }
 
+    // ARAYÜZÜ GÜNCELLE
     function updateUI() {
         ensureDataExists(selectedDate);
         let data = db[selectedDate];
 
+        // Takvim
         const calContainer = document.getElementById('calendar');
         calContainer.innerHTML = "";
         const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
@@ -315,6 +342,7 @@
                 </div>`;
         }
         
+        // Özet Ekranı
         document.getElementById('show-cal').innerHTML = `${data.cal || 0} <span>kcal</span>`;
         document.getElementById('show-prot').innerText = (data.prot || 0) + 'g';
         document.getElementById('show-carb').innerText = (data.carb || 0) + 'g';
@@ -323,10 +351,13 @@
         document.getElementById('show-water').innerText = (data.water || 0) + 'L';
         document.getElementById('show-sleep').innerText = (data.sleep || 0) + 's';
 
+        // Form Girdileri
         ['cal','prot','carb','fat','steps','water','sleep'].forEach(id => {
-            document.getElementById(id).value = data[id] || '';
+            let el = document.getElementById(id);
+            if(el) el.value = data[id] || '';
         });
 
+        // Listeleri Render Et
         renderList('list-supplements', tasksConfig.supplements);
         renderList('list-posture', tasksConfig.posture);
         renderList('list-abs', tasksConfig.abs);
@@ -336,6 +367,7 @@
 
     function renderList(elementId, taskArray) {
         const container = document.getElementById(elementId);
+        if(!container) return;
         container.innerHTML = '';
         let data = db[selectedDate];
 
@@ -358,7 +390,7 @@
     function toggleTask(taskId) {
         ensureDataExists(selectedDate);
         db[selectedDate].tasks[taskId] = !db[selectedDate].tasks[taskId];
-        localStorage.setItem('athleteDBPro', JSON.stringify(db));
+        try { localStorage.setItem('athleteDBProFinal', JSON.stringify(db)); } catch(e){}
         updateUI();
     }
 
@@ -372,29 +404,37 @@
     function saveData() {
         ensureDataExists(selectedDate);
         ['cal','prot','carb','fat','steps','water','sleep'].forEach(id => {
-            db[selectedDate][id] = document.getElementById(id).value;
+            let el = document.getElementById(id);
+            if(el) db[selectedDate][id] = el.value;
         });
         
-        localStorage.setItem('athleteDBPro', JSON.stringify(db));
+        try { localStorage.setItem('athleteDBProFinal', JSON.stringify(db)); } catch(e){}
         updateUI();
 
-        const btn = document.querySelector('.card:nth-last-child(2) button');
+        const btn = document.getElementById('save-btn');
         let originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Şampiyon Gibi Kaydedildi!';
         btn.style.background = '#059669';
         setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; }, 2000);
     }
 
-    // --- GEMINI AI FONKSİYONLARI ---
+    // --- YAPAY ZEKA (GEMINI AI) ENTEGRASYONU ---
     async function analyzeFood() {
-        const apiKey = localStorage.getItem('geminiApiKey');
+        const apiKey = localStorage.getItem('geminiApiKeyLocal');
         const textInput = document.getElementById('food-text').value.trim();
         const fileInput = document.getElementById('food-image').files[0];
         const btn = document.getElementById('ai-btn');
         const resultBox = document.getElementById('ai-result');
 
-        if (!apiKey) { alert("API Anahtarı bulunamadı. Lütfen cihaz kaydınızı yapın."); return; }
-        if (!textInput && !fileInput) { alert("Yemeğin adını yazın veya fotoğrafını yükleyin!"); return; }
+        if (!apiKey) { 
+            alert("Lütfen önce yukarıdaki alana API Anahtarınızı girip cihazınızı kaydedin."); 
+            document.getElementById('gemini-api-key').focus();
+            return; 
+        }
+        if (!textInput && !fileInput) { 
+            alert("Lütfen analiz edilecek yemeğin adını yazın veya bir fotoğraf yükleyin."); 
+            return; 
+        }
 
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yapay Zeka Analiz Ediyor...';
         btn.disabled = true;
@@ -402,5 +442,132 @@
 
         try {
             let contents = [];
-            const promptText = `Sen profesyonel bir sporcu beslenme uzmanısın. Verilen yemeğin veya metnin besin değerlerini tahmin et. SADECE şu formatta JSON döndür, kesinlikle başka tek bir kelime veya markdown karakteri (
-http://googleusercontent.com/immersive_entry_chip/0
+            
+            // Kesin ve Net Prompt Formatı
+            const systemPrompt = `Sen profesyonel bir sporcu diyetisyenisin. Gönderilen yemeğin besin değerlerini (gram cinsinden) tahmin et. SADECE aşağidaki formatta bir JSON objesi döndür. Kesinlikle markdown karakterleri (\`\`\`json vs) veya başka bir açıklama ekleme. 
+Örnek Format: {"cal": 150, "prot": 20, "carb": 10, "fat": 5, "fiber": 2}`;
+
+            if (fileInput) {
+                const base64Image = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(fileInput);
+                });
+                
+                contents.push({
+                    "parts": [
+                        {"text": systemPrompt},
+                        {"text": textInput ? "Kullanıcı notu: " + textInput : "Bu fotoğraftaki yemeğin besin değerlerini analiz et."},
+                        {"inline_data": {"mime_type": fileInput.type, "data": base64Image}}
+                    ]
+                });
+            } else {
+                contents.push({
+                    "parts": [{"text": systemPrompt + "\n\nAnaliz edilecek yemek: " + textInput}]
+                });
+            }
+
+            // API İstek
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: contents })
+            });
+
+            const data = await response.json();
+            
+            if(data.error) throw new Error(data.error.message);
+
+            let aiText = data.candidates[0].content.parts[0].text;
+            
+            // AI bazen formatı bozarsa diye Regex ile JSON çıkarma (Hata Koruması)
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                tempAiData = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error("Yapay zeka geçerli bir format döndüremedi.");
+            }
+
+            // Değerleri Ekrana Bas
+            document.getElementById('ai-cal').innerText = tempAiData.cal + ' kcal';
+            document.getElementById('ai-prot').innerText = tempAiData.prot + 'g';
+            document.getElementById('ai-carb').innerText = tempAiData.carb + 'g';
+            document.getElementById('ai-fat').innerText = tempAiData.fat + 'g';
+            document.getElementById('ai-fiber').innerText = (tempAiData.fiber || 0) + 'g';
+
+            resultBox.style.display = 'block';
+
+        } catch (error) {
+            console.error("Yapay Zeka Hatası:", error);
+            alert("Analiz başarısız oldu. Lütfen API anahtarınızın doğru olduğunu kontrol edin.\n\nSistem Notu: " + error.message);
+        } finally {
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Yapay Zeka İle Analiz Et';
+            btn.disabled = false;
+        }
+    }
+
+    // AI Verilerini Formlara Uygula
+    function applyAiData() {
+        if (!tempAiData) return;
+
+        let currentCal = parseFloat(document.getElementById('cal').value) || 0;
+        let currentProt = parseFloat(document.getElementById('prot').value) || 0;
+        let currentCarb = parseFloat(document.getElementById('carb').value) || 0;
+        let currentFat = parseFloat(document.getElementById('fat').value) || 0;
+
+        document.getElementById('cal').value = currentCal + (tempAiData.cal || 0);
+        document.getElementById('prot').value = currentProt + (tempAiData.prot || 0);
+        document.getElementById('carb').value = currentCarb + (tempAiData.carb || 0);
+        document.getElementById('fat').value = currentFat + (tempAiData.fat || 0);
+
+        saveData(); 
+
+        document.getElementById('ai-result').style.display = 'none';
+        document.getElementById('food-text').value = '';
+        document.getElementById('food-image').value = '';
+        tempAiData = null;
+        
+        alert("Besin değerleri başarıyla bugünkü listene eklendi!");
+    }
+
+    // --- GRAFİK ÇİZİMİ ---
+    function renderChart() {
+        let labels = Object.keys(db).sort().slice(-7);
+        let chartData = labels.map(l => db[l].cal || 0);
+        
+        const ctx = document.getElementById('myChart');
+        if(!ctx) return;
+
+        if(chart) chart.destroy();
+        
+        Chart.defaults.color = '#94a3b8';
+        chart = new Chart(ctx, { 
+            type: 'bar', 
+            data: { 
+                labels: labels.map(l => l.slice(8,10) + '/' + l.slice(5,7)), 
+                datasets: [{ 
+                    label: 'Günlük Kalori', 
+                    data: chartData, 
+                    backgroundColor: '#10b981',
+                    borderRadius: 8,
+                    borderSkipped: false
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' } }, 
+                    x: { grid: { display: false } } 
+                } 
+            }
+        });
+    }
+
+    // Sayfa Açıldığında Kontrolleri Başlat
+    checkApiState();
+    updateUI();
+</script>
+</body>
+</html>
