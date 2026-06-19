@@ -2,72 +2,117 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>GymPro Ultimate AI</title>
+    <title>Athlete Pro | Premium Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg:#000; --green:#30d158; }
-        body { font-family: sans-serif; background: var(--bg); color: #fff; padding: 20px; margin: 0; }
-        .card { background: #121212; border: 1px solid #333; padding: 20px; border-radius: 20px; max-width: 500px; margin: auto; }
-        input, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; background: #222; border: 1px solid #444; color: white; box-sizing: border-box; }
-        button { background: var(--green); border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; color: black; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background: #f2f7f2; color: #1a1a1a; padding: 20px; }
+        .container { max-width: 500px; margin: auto; }
+        
+        /* Modern Kart Tasarımı */
+        .card { background: white; padding: 25px; border-radius: 28px; box-shadow: 0 8px 20px rgba(0,0,0,0.03); margin-bottom: 20px; }
+        
+        h1 { font-size: 1.8em; margin-bottom: 20px; color: #2d3436; }
+        
+        /* İstatistik Grid */
+        .grid-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .stat-item { text-align: center; font-size: 0.75em; color: #636e72; }
+        .stat-value { font-size: 1.1em; font-weight: 700; color: #00b894; display: block; margin-top: 5px; }
+
+        /* Form ve Buton */
+        input { width: 100%; padding: 15px; margin: 8px 0; border: none; background: #f8f9fa; border-radius: 16px; font-size: 1em; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #00b894; color: white; border: none; border-radius: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        
+        /* Takvim ve Grafik */
+        .day-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
+        .day-btn { padding: 12px; background: #fff; border: 1px solid #e1e1e1; border-radius: 14px; cursor: pointer; min-width: 40px; text-align: center; font-size: 0.8em; }
+        .day-btn.active { border: 2px solid #00b894; color: #00b894; }
     </style>
 </head>
 <body>
-<div class="app">
+
+<div class="container">
+    <h1 id="date-title">Bugün</h1>
+
     <div class="card">
-        <h3>🤖 Analiz Paneli</h3>
-        <input type="password" id="key" placeholder="Gemini API Anahtarın">
-        <input type="file" id="photo" accept="image/*">
-        <textarea id="mealInput" placeholder="Ne yedin?"></textarea>
-        <button onclick="scanFood()">Analiz Et</button>
-        <div id="status" style="margin-top:10px; font-size:12px; color:red;"></div>
+        <div style="font-size: 2.5em; font-weight: 700;"><span id="show-cal">0</span> <span style="font-size: 0.3em; font-weight: normal; color: #636e72;">kcal</span></div>
+        <div class="grid-stats">
+            <div class="stat-item">Protein<span class="stat-value" id="show-prot">0g</span></div>
+            <div class="stat-item">Karb<span class="stat-value" id="show-carb">0g</span></div>
+            <div class="stat-item">Yağ<span class="stat-value" id="show-fat">0g</span></div>
+            <div class="stat-item">Adım<span class="stat-value" id="show-steps">0</span></div>
+        </div>
     </div>
-    <div id="result" class="card" style="display:none;"></div>
+
+    <div class="card">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <div class="day-scroll" id="calendar"></div>
+
+    <div class="card">
+        <input type="number" id="cal" placeholder="Kalori">
+        <input type="number" id="prot" placeholder="Protein (g)">
+        <input type="number" id="carb" placeholder="Karb (g)">
+        <input type="number" id="fat" placeholder="Yağ (g)">
+        <input type="number" id="steps" placeholder="Adım Sayısı">
+        <button onclick="saveData()">Verileri Kaydet</button>
+    </div>
 </div>
 
 <script>
-    async function scanFood() {
-        let file = document.getElementById("photo").files[0];
-        let input = document.getElementById("mealInput").value;
-        let key = document.getElementById("key").value;
-        let status = document.getElementById("status");
+    let db = JSON.parse(localStorage.getItem('athleteDB')) || {};
+    let selectedDate = new Date().toISOString().slice(0,10);
+    let chart;
+
+    function updateUI() {
+        const calContainer = document.getElementById('calendar');
+        calContainer.innerHTML = "";
+        for(let i=6; i>=0; i--) {
+            let d = new Date(); d.setDate(d.getDate() - i);
+            let ds = d.toISOString().slice(0,10);
+            let active = ds === selectedDate ? 'active' : '';
+            calContainer.innerHTML += `<div class="day-btn ${active}" onclick="selectDate('${ds}')">${ds.slice(8)}</div>`;
+        }
         
-        if(!key) return alert("API Key gir!");
-        status.innerText = "Analiz ediliyor...";
-
-        let base64 = "";
-        if(file) {
-            let canvas = document.createElement("canvas");
-            let img = await createImageBitmap(file);
-            canvas.width = 300; canvas.height = (img.height * 300) / img.width;
-            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-            base64 = canvas.toDataURL("image/jpeg", 0.5).split(",")[1];
-        }
-
-        try {
-            // Model adı 'gemini-1.5-flash-latest' olarak güncellendi
-            let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`, {
-                method: "POST", headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ contents: [{ parts: [
-                    {text: 'Sadece şu JSON formatını dön: {"name":"İsim","cal":0,"pro":0,"carb":0,"fat":0,"fib":0}. Yemek: ' + input},
-                    base64 ? {inlineData:{mimeType:"image/jpeg", data:base64}} : {text: ""}
-                ]}]})
-            });
-            let data = await res.json();
-            
-            if(data.error) throw new Error(data.error.message);
-            
-            let txt = data.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
-            let json = JSON.parse(txt);
-            
-            document.getElementById("result").style.display = "block";
-            document.getElementById("result").innerHTML = `<b>${json.name}</b><br>Kalori: ${json.cal} | Pro: ${json.pro}g | Karb: ${json.carb}g`;
-            status.style.color = "green";
-            status.innerText = "Başarılı! ✅";
-        } catch(e) { 
-            status.innerText = "HATA: " + e.message;
-            console.error("Detay:", e);
-        }
+        let data = db[selectedDate] || {cal:0, prot:0, carb:0, fat:0, steps:0};
+        document.getElementById('show-cal').innerText = data.cal || 0;
+        document.getElementById('show-prot').innerText = (data.prot || 0) + 'g';
+        document.getElementById('show-carb').innerText = (data.carb || 0) + 'g';
+        document.getElementById('show-fat').innerText = (data.fat || 0) + 'g';
+        document.getElementById('show-steps').innerText = data.steps || 0;
+        
+        renderChart();
     }
+
+    function selectDate(d) {
+        selectedDate = d;
+        document.getElementById('date-title').innerText = "Tarih: " + d;
+        let data = db[d] || {};
+        ['cal','prot','carb','fat','steps'].forEach(id => document.getElementById(id).value = data[id] || '');
+        updateUI();
+    }
+
+    function saveData() {
+        db[selectedDate] = { cal: document.getElementById('cal').value, prot: document.getElementById('prot').value, carb: document.getElementById('carb').value, fat: document.getElementById('fat').value, steps: document.getElementById('steps').value };
+        localStorage.setItem('athleteDB', JSON.stringify(db));
+        updateUI();
+        alert('Kaydedildi!');
+    }
+
+    function renderChart() {
+        let labels = Object.keys(db).slice(-7);
+        let data = labels.map(l => db[l].cal || 0);
+        if(chart) chart.destroy();
+        chart = new Chart(document.getElementById('myChart'), { 
+            type: 'bar', 
+            data: { labels: labels.map(l => l.slice(8)), datasets: [{ label: 'Günlük Kalori', data: data, backgroundColor: '#00b894' }] },
+            options: { plugins: { legend: { display: false } } }
+        });
+    }
+
+    updateUI();
 </script>
 </body>
 </html>
