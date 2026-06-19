@@ -100,7 +100,7 @@
 
 <div class="container">
     <div class="header">
-        <h1><i class="fa-solid fa-bolt"></i> Athlete Pro</h1>
+        <h1><i class="fa-solid fa-bolt"></i> Athlete Pro <span style="font-size: 0.4em; vertical-align: middle; background: var(--ai-color); padding: 4px 8px; border-radius: 8px; color: white;">v6.0</span></h1>
         <span id="date-title" style="color: var(--text-muted); font-weight: 600;">Bugün</span>
     </div>
 
@@ -142,23 +142,23 @@
         <ul class="task-list" id="list-abs"></ul>
     </div>
 
-    <!-- YAPAY ZEKA YEMEK ANALİZİ KARTI (HER ZAMAN GÖRÜNÜR) -->
+    <!-- YAPAY ZEKA YEMEK ANALİZİ KARTI -->
     <div class="card" style="border-color: rgba(168, 85, 247, 0.4); box-shadow: 0 10px 30px rgba(168, 85, 247, 0.1);">
         <div class="card-title" style="color: #c084fc;"><i class="fa-solid fa-robot"></i> Gemini AI Yemek Analizi</div>
         
-        <!-- API Anahtarı Girme Alanı (Anahtar yoksa görünür) -->
+        <!-- API Anahtarı Girme Alanı -->
         <div id="api-setup-section" class="api-key-box">
             <input type="password" id="gemini-api-key" placeholder="API Anahtarını Yapıştır">
             <button onclick="saveApiKey()"><i class="fa-solid fa-lock"></i></button>
         </div>
 
-        <!-- API Kayıtlı Rozeti (Anahtar varsa görünür) -->
+        <!-- API Kayıtlı Rozeti -->
         <div id="api-registered-section" class="device-registered">
             <span><i class="fa-solid fa-shield-check"></i> Cihaz AI Sistemine Kayıtlı</span>
             <button onclick="resetApiKey()"><i class="fa-solid fa-trash"></i> Sil</button>
         </div>
 
-        <!-- AI Araçları (Her zaman görünür, kullanımı kolay) -->
+        <!-- AI Araçları -->
         <div class="input-group full-width">
             <i class="fa-solid fa-utensils" style="top:18px;"></i>
             <input type="text" id="food-text" placeholder="Ne yedin? (Ör: 200g tavuk göğsü, 1 tabak pilav)">
@@ -253,7 +253,6 @@
     let chart = null;
     let tempAiData = null;
 
-    // --- CİHAZ KAYIT VE API GÜVENLİK SİSTEMİ ---
     function checkApiState() {
         const apiKey = localStorage.getItem('geminiApiKeyLocal');
         const setupSection = document.getElementById('api-setup-section');
@@ -271,7 +270,6 @@
     function saveApiKey() {
         const keyInput = document.getElementById('gemini-api-key').value.trim();
         if (!keyInput) { alert("Lütfen geçerli bir API anahtarı girin!"); return; }
-        
         try {
             localStorage.setItem('geminiApiKeyLocal', keyInput);
             document.getElementById('gemini-api-key').value = '';
@@ -289,7 +287,6 @@
         }
     }
 
-    // --- GÖREVLER (SUPPLEMENT, POSTÜR, KARIN) ---
     const tasksConfig = {
         supplements: [
             { id: 'sup_omega', label: 'Omega-3', desc: '1-2 Kapsül (Sabah tok)' },
@@ -368,7 +365,6 @@
         taskArray.forEach(task => {
             let isCompleted = data.tasks[task.id] || false;
             let activeClass = isCompleted ? 'completed' : '';
-            
             container.innerHTML += `
                 <li class="task-item ${activeClass}" onclick="toggleTask('${task.id}')">
                     <div class="custom-checkbox"><i class="fa-solid fa-check"></i></div>
@@ -401,7 +397,6 @@
             let el = document.getElementById(id);
             if(el) db[selectedDate][id] = el.value;
         });
-        
         try { localStorage.setItem('athleteDBProFinal', JSON.stringify(db)); } catch(e){}
         updateUI();
 
@@ -412,7 +407,7 @@
         setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; }, 2000);
     }
 
-    // --- EN GELİŞMİŞ YAPAY ZEKA (GEMINI 1.5 PRO) ENTEGRASYONU ---
+    // --- EN YENİ VE ÜCRETSİZ KOTA DOSTU YAPAY ZEKA (GEMINI 3.5 FLASH) ENTEGRASYONU ---
     async function analyzeFood() {
         const apiKey = localStorage.getItem('geminiApiKeyLocal');
         const textInput = document.getElementById('food-text').value.trim();
@@ -430,13 +425,14 @@
             return; 
         }
 
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yapay Zeka Düşünüyor...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yapay Zeka Analiz Ediyor...';
         btn.disabled = true;
         resultBox.style.display = 'none';
 
         try {
             let contents = [];
-            const systemPrompt = "Sen profesyonel bir sporcu diyetisyenisin. Verilen yemeğin besin değerlerini gram ve kcal cinsinden tahmin et.";
+            
+            const systemPrompt = "Sen profesyonel bir sporcu diyetisyenisin. Verilen yemeğin besin değerlerini tahmin et.";
 
             if (fileInput) {
                 const base64Image = await new Promise((resolve) => {
@@ -448,7 +444,7 @@
                 contents.push({
                     "parts": [
                         {"text": systemPrompt},
-                        {"text": textInput ? "Ek kullanıcı notu: " + textInput : "Bu fotoğraftaki yemeğin besin değerlerini hesapla."},
+                        {"text": textInput ? "Kullanıcı notu: " + textInput : "Bu fotoğraftaki yemeğin besin değerlerini hesapla."},
                         {"inline_data": {"mime_type": fileInput.type, "data": base64Image}}
                     ]
                 });
@@ -458,7 +454,7 @@
                 });
             }
 
-            // GEMINI 1.5 PRO ve "Sadece JSON" (Structured Output) Kilidi
+            // BURASI ÖNEMLİ: Hata vermeyen, ücretsiz kotası yüksek olan gemini-3.5-flash modelini çağırıyoruz
             const payload = {
                 contents: contents,
                 generationConfig: {
@@ -477,7 +473,7 @@
                 }
             };
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -487,8 +483,9 @@
             
             if(data.error) throw new Error(data.error.message);
 
-            // Gelen veri doğrudan %100 temiz JSON olmak zorunda
             let aiText = data.candidates[0].content.parts[0].text;
+            
+            // Gelen metni doğrudan JSON'a çevir (Schema olduğu için %100 temiz gelir)
             tempAiData = JSON.parse(aiText);
 
             document.getElementById('ai-cal').innerText = tempAiData.cal + ' kcal';
@@ -501,7 +498,7 @@
 
         } catch (error) {
             console.error("Yapay Zeka Hatası:", error);
-            alert("Analiz başarısız oldu. API anahtarını kontrol et. Hata: " + error.message);
+            alert("Analiz başarısız oldu. API anahtarınızın kotalı veya kısıtlanmış olmadığından emin olun.\n\nHata Detayı: " + error.message);
         } finally {
             btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Yapay Zeka İle Analiz Et';
             btn.disabled = false;
@@ -528,7 +525,7 @@
         document.getElementById('food-image').value = '';
         tempAiData = null;
         
-        alert("Besin değerleri bugünkü listene başarıyla eklendi!");
+        alert("Besin değerleri başarıyla bugünkü listene eklendi!");
     }
 
     function renderChart() {
@@ -565,7 +562,7 @@
         });
     }
 
-    // Başlat
+    // Sayfa Yüklendiğinde API Kontrolünü ve Arayüzü Başlat
     checkApiState();
     updateUI();
 </script>
